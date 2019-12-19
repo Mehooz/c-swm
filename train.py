@@ -49,7 +49,7 @@ if __name__=='__main__':
                         help='Disable CUDA training.')
     parser.add_argument('--seed', type=int, default=42,
                         help='Random seed (default: 42).')
-    parser.add_argument('--log-interval', type=int, default=20,
+    parser.add_argument('--log_interval', type=int, default=20,
                         help='How many batches to wait before logging'
                              'training status.')
     parser.add_argument('--dataset', type=str,
