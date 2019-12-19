@@ -2,7 +2,7 @@
 
 import numpy as np
 
-import utils
+import util
 import gym
 from gym import spaces
 from gym.utils import seeding
@@ -74,7 +74,7 @@ class BlockPushing(gym.Env):
         self.num_objects = num_objects
         self.num_actions = 4 * self.num_objects  # Move NESW
 
-        self.colors = utils.get_colors(num_colors=max(9, self.num_objects))
+        self.colors = util.get_colors(num_colors=max(9, self.num_objects))
 
         self.np_random = None
         self.game = None

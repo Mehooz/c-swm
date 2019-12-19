@@ -1,6 +1,6 @@
 import argparse
 import torch
-import utils
+import util
 import os
 import pickle
 
@@ -45,7 +45,7 @@ if args.cuda:
 
 device = torch.device('cuda' if args.cuda else 'cpu')
 
-dataset = utils.PathDataset(
+dataset = util.PathDataset(
     hdf5_file=args.dataset, path_length=args_eval.num_steps)
 eval_loader = data.DataLoader(
     dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
@@ -111,7 +111,7 @@ with torch.no_grad():
     next_state_flat = next_state_cat.view(full_size, -1)
     pred_state_flat = pred_state_cat.view(full_size, -1)
 
-    dist_matrix = utils.pairwise_distance_matrix(
+    dist_matrix = util.pairwise_distance_matrix(
         next_state_flat, pred_state_flat)
     dist_matrix_diag = torch.diag(dist_matrix).unsqueeze(-1)
     dist_matrix_augmented = torch.cat(

@@ -1,4 +1,4 @@
-import utils
+import util
 
 import numpy as np
 
@@ -147,20 +147,20 @@ class TransitionGNN(torch.nn.Module):
 
         self.edge_mlp = nn.Sequential(
             nn.Linear(input_dim*2, hidden_dim),
-            utils.get_act_fn(act_fn),
+            util.get_act_fn(act_fn),
             nn.Linear(hidden_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
-            utils.get_act_fn(act_fn),
+            util.get_act_fn(act_fn),
             nn.Linear(hidden_dim, hidden_dim))
 
         node_input_dim = hidden_dim + input_dim + self.action_dim
 
         self.node_mlp = nn.Sequential(
             nn.Linear(node_input_dim, hidden_dim),
-            utils.get_act_fn(act_fn),
+            util.get_act_fn(act_fn),
             nn.Linear(hidden_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
-            utils.get_act_fn(act_fn),
+            util.get_act_fn(act_fn),
             nn.Linear(hidden_dim, input_dim))
 
         self.edge_list = None
@@ -174,7 +174,7 @@ class TransitionGNN(torch.nn.Module):
     def _node_model(self, node_attr, edge_index, edge_attr):
         if edge_attr is not None:
             row, col = edge_index
-            agg = utils.unsorted_segment_sum(
+            agg = util.unsorted_segment_sum(
                 edge_attr, row, num_segments=node_attr.size(0))
             out = torch.cat([node_attr, agg], dim=1)
         else:
@@ -234,11 +234,11 @@ class TransitionGNN(torch.nn.Module):
         if not self.ignore_action:
 
             if self.copy_action:
-                action_vec = utils.to_one_hot(
+                action_vec = util.to_one_hot(
                     action, self.action_dim).repeat(1, self.num_objects)
                 action_vec = action_vec.view(-1, self.action_dim)
             else:
-                action_vec = utils.to_one_hot(
+                action_vec = util.to_one_hot(
                     action, self.action_dim * num_nodes)
                 action_vec = action_vec.view(-1, self.action_dim)
 
@@ -262,8 +262,8 @@ class EncoderCNNSmall(nn.Module):
             input_dim, hidden_dim, (10, 10), stride=10)
         self.cnn2 = nn.Conv2d(hidden_dim, num_objects, (1, 1), stride=1)
         self.ln1 = nn.BatchNorm2d(hidden_dim)
-        self.act1 = utils.get_act_fn(act_fn_hid)
-        self.act2 = utils.get_act_fn(act_fn)
+        self.act1 = util.get_act_fn(act_fn_hid)
+        self.act2 = util.get_act_fn(act_fn)
 
     def forward(self, obs):
         h = self.act1(self.ln1(self.cnn1(obs)))
@@ -279,12 +279,12 @@ class EncoderCNNMedium(nn.Module):
 
         self.cnn1 = nn.Conv2d(
             input_dim, hidden_dim, (9, 9), padding=4)
-        self.act1 = utils.get_act_fn(act_fn_hid)
+        self.act1 = util.get_act_fn(act_fn_hid)
         self.ln1 = nn.BatchNorm2d(hidden_dim)
 
         self.cnn2 = nn.Conv2d(
             hidden_dim, num_objects, (5, 5), stride=5)
-        self.act2 = utils.get_act_fn(act_fn)
+        self.act2 = util.get_act_fn(act_fn)
 
     def forward(self, obs):
         h = self.act1(self.ln1(self.cnn1(obs)))
@@ -300,19 +300,19 @@ class EncoderCNNLarge(nn.Module):
         super(EncoderCNNLarge, self).__init__()
 
         self.cnn1 = nn.Conv2d(input_dim, hidden_dim, (3, 3), padding=1)
-        self.act1 = utils.get_act_fn(act_fn_hid)
+        self.act1 = util.get_act_fn(act_fn_hid)
         self.ln1 = nn.BatchNorm2d(hidden_dim)
 
         self.cnn2 = nn.Conv2d(hidden_dim, hidden_dim, (3, 3), padding=1)
-        self.act2 = utils.get_act_fn(act_fn_hid)
+        self.act2 = util.get_act_fn(act_fn_hid)
         self.ln2 = nn.BatchNorm2d(hidden_dim)
 
         self.cnn3 = nn.Conv2d(hidden_dim, hidden_dim, (3, 3), padding=1)
-        self.act3 = utils.get_act_fn(act_fn_hid)
+        self.act3 = util.get_act_fn(act_fn_hid)
         self.ln3 = nn.BatchNorm2d(hidden_dim)
 
         self.cnn4 = nn.Conv2d(hidden_dim, num_objects, (3, 3), padding=1)
-        self.act4 = utils.get_act_fn(act_fn)
+        self.act4 = util.get_act_fn(act_fn)
 
     def forward(self, obs):
         h = self.act1(self.ln1(self.cnn1(obs)))
@@ -337,8 +337,8 @@ class EncoderMLP(nn.Module):
 
         self.ln = nn.LayerNorm(hidden_dim)
 
-        self.act1 = utils.get_act_fn(act_fn)
-        self.act2 = utils.get_act_fn(act_fn)
+        self.act1 = util.get_act_fn(act_fn)
+        self.act2 = util.get_act_fn(act_fn)
 
     def forward(self, ins):
         h_flat = ins.view(-1, self.num_objects, self.input_dim)
@@ -362,12 +362,12 @@ class DecoderMLP(nn.Module):
         self.num_objects = num_objects
         self.output_size = output_size
 
-        self.act1 = utils.get_act_fn(act_fn)
-        self.act2 = utils.get_act_fn(act_fn)
+        self.act1 = util.get_act_fn(act_fn)
+        self.act2 = util.get_act_fn(act_fn)
 
     def forward(self, ins):
         obj_ids = torch.arange(self.num_objects)
-        obj_ids = utils.to_one_hot(obj_ids, self.num_objects).unsqueeze(0)
+        obj_ids = util.to_one_hot(obj_ids, self.num_objects).unsqueeze(0)
         obj_ids = obj_ids.repeat((ins.size(0), 1, 1)).to(ins.get_device())
 
         h = torch.cat((ins, obj_ids), -1)
@@ -403,9 +403,9 @@ class DecoderCNNSmall(nn.Module):
         self.num_objects = num_objects
         self.map_size = output_size[0], width, height
 
-        self.act1 = utils.get_act_fn(act_fn)
-        self.act2 = utils.get_act_fn(act_fn)
-        self.act3 = utils.get_act_fn(act_fn)
+        self.act1 = util.get_act_fn(act_fn)
+        self.act2 = util.get_act_fn(act_fn)
+        self.act3 = util.get_act_fn(act_fn)
 
     def forward(self, ins):
         h = self.act1(self.fc1(ins))
@@ -445,9 +445,9 @@ class DecoderCNNMedium(nn.Module):
         self.num_objects = num_objects
         self.map_size = output_size[0], width, height
 
-        self.act1 = utils.get_act_fn(act_fn)
-        self.act2 = utils.get_act_fn(act_fn)
-        self.act3 = utils.get_act_fn(act_fn)
+        self.act1 = util.get_act_fn(act_fn)
+        self.act2 = util.get_act_fn(act_fn)
+        self.act3 = util.get_act_fn(act_fn)
 
     def forward(self, ins):
         h = self.act1(self.fc1(ins))
@@ -493,11 +493,11 @@ class DecoderCNNLarge(nn.Module):
         self.num_objects = num_objects
         self.map_size = output_size[0], width, height
 
-        self.act1 = utils.get_act_fn(act_fn)
-        self.act2 = utils.get_act_fn(act_fn)
-        self.act3 = utils.get_act_fn(act_fn)
-        self.act4 = utils.get_act_fn(act_fn)
-        self.act5 = utils.get_act_fn(act_fn)
+        self.act1 = util.get_act_fn(act_fn)
+        self.act2 = util.get_act_fn(act_fn)
+        self.act3 = util.get_act_fn(act_fn)
+        self.act4 = util.get_act_fn(act_fn)
+        self.act5 = util.get_act_fn(act_fn)
 
     def forward(self, ins):
         h = self.act1(self.fc1(ins))

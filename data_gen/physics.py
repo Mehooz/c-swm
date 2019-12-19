@@ -2,7 +2,7 @@ from envs import physics_sim
 import numpy as np
 import argparse
 
-from utils import save_list_dict_h5py
+from util import save_list_dict_h5py
 
 
 parser = argparse.ArgumentParser()

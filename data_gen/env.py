@@ -9,7 +9,7 @@ import argparse
 # noinspection PyUnresolvedReferences
 import envs
 
-import utils
+import util
 
 import gym
 from gym import logger
@@ -131,5 +131,5 @@ if __name__ == '__main__':
     env.close()
 
     # Save replay buffer to disk.
-    utils.save_list_dict_h5py(replay_buffer, args.fname)
+    util.save_list_dict_h5py(replay_buffer, args.fname)
 
