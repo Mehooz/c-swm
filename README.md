@@ -1,6 +1,7 @@
 # Contrastive Learning of Structured World Models
 
-
+## NOTICE
+* this code is a forked version and has some changes compared with the official version.
 ## Requirements
 
 * Python 3.6 or 3.7
