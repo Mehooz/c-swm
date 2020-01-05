@@ -22,7 +22,7 @@ if __name__=='__main__':
     parser.add_argument('--learning-rate', type=float, default=5e-4,
                         help='Learning rate.')
 
-    parser.add_argument('--encoder', type=str, default='small',
+    parser.add_argument('--encoder', type=str, default='large',
                         help='Object extrator CNN size (e.g., `small`).')
     parser.add_argument('--sigma', type=float, default=0.5,
                         help='Energy scale.')
@@ -82,9 +82,9 @@ if __name__=='__main__':
 
     if not os.path.exists(save_folder):
         os.mkdir(save_folder)
-    meta_file = os.path.join(save_folder, 'metadata_test.pkl')
-    model_file = os.path.join(save_folder, 'model_test.pt')
-    log_file = os.path.join(save_folder, 'log_test.txt')
+    meta_file = os.path.join(save_folder, 'metadata_no_pred.pkl')
+    model_file = os.path.join(save_folder, 'model_no_pred.pt')
+    log_file = os.path.join(save_folder, 'log_no_pred.txt')
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
     logger = logging.getLogger()

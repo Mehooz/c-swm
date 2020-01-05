@@ -109,7 +109,7 @@ class ContrastiveSWM(nn.Module):
         perm = np.random.permutation(batch_size)
         neg_state = state[perm]
 
-        self.pos_loss = self.energy(state, action, next_state)
+        self.pos_loss = self.energy(state, action, next_state,no_trans=True)
         zeros = torch.zeros_like(self.pos_loss)
 
         self.pos_loss = self.pos_loss.mean()
