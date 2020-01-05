@@ -98,7 +98,6 @@ class ContrastiveSWM(nn.Module):
 
     def contrastive_loss(self, obs, action, next_obs):
 
-
         objs = self.obj_extractor(obs)
         next_objs = self.obj_extractor(next_obs)
 
@@ -110,7 +109,7 @@ class ContrastiveSWM(nn.Module):
         perm = np.random.permutation(batch_size)
         neg_state = state[perm]
 
-        self.pos_loss = self.energy(state, action, next_state,no_trans=True)
+        self.pos_loss = self.energy(state, action, next_state)
         zeros = torch.zeros_like(self.pos_loss)
 
         self.pos_loss = self.pos_loss.mean()
@@ -121,8 +120,6 @@ class ContrastiveSWM(nn.Module):
         loss = self.pos_loss + self.neg_loss
 
         return loss
-
-
 
     def forward(self, obs):
         return self.obj_encoder(self.obj_extractor(obs))
@@ -276,7 +273,6 @@ class EncoderCNNMedium(nn.Module):
     def __init__(self, input_dim, hidden_dim, num_objects, act_fn='sigmoid',
                  act_fn_hid='leaky_relu'):
         super(EncoderCNNMedium, self).__init__()
-
         self.cnn1 = nn.Conv2d(
             input_dim, hidden_dim, (9, 9), padding=4)
         self.act1 = util.get_act_fn(act_fn_hid)

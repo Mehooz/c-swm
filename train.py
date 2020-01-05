@@ -82,9 +82,9 @@ if __name__=='__main__':
 
     if not os.path.exists(save_folder):
         os.mkdir(save_folder)
-    meta_file = os.path.join(save_folder, 'metadata.pkl')
-    model_file = os.path.join(save_folder, 'model.pt')
-    log_file = os.path.join(save_folder, 'log.txt')
+    meta_file = os.path.join(save_folder, 'metadata_test.pkl')
+    model_file = os.path.join(save_folder, 'model_test.pt')
+    log_file = os.path.join(save_folder, 'log_test.txt')
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
     logger = logging.getLogger()

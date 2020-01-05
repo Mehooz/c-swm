@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="6aed6cd7-d440-4597-ba9f-8e0b05f37f62" name="MIG" url="http://101.6.96.131">
+        <fileTransfer host="101.6.96.131" port="6022" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="6022" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

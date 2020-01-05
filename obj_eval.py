@@ -29,8 +29,8 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
 args_eval = parser.parse_args()
 
 if __name__=='__main__':
-    meta_file = os.path.join(args_eval.save_folder, 'metadata_no_pred.pkl')
-    model_file = os.path.join(args_eval.save_folder, 'model_no_pred.pt')
+    meta_file = os.path.join(args_eval.save_folder, 'metadata.pkl')
+    model_file = os.path.join(args_eval.save_folder, 'model.pt')
 
     args = pickle.load(open(meta_file, 'rb'))['args']
 
@@ -78,7 +78,7 @@ if __name__=='__main__':
 
     pred_states = []
     next_states = []
-    count=0
+
     with torch.no_grad():
 
         for batch_idx, data_batch in enumerate(eval_loader):
@@ -93,12 +93,11 @@ if __name__=='__main__':
             next_obs = observations[-1]
             mask=model.obj_extractor(obs)
             state = model.obj_encoder(model.obj_extractor(obs))
-            if count<=10:
-                count+=1
-                plt.imsave('mask'+str(count)+'.jpg',mask[0].permute(1,2,0).cpu().numpy())
+            plt.imsave('mask.jpg',mask[0].permute(1,2,0).cpu().numpy())
 
-                plt.imsave('obs'+str(count)+'.jpg',obs[0][0:3].permute(1,2,0).cpu().numpy())
+            plt.imsave('obs.jpg',obs[0][0:3].permute(1,2,0).cpu().numpy())
 
+            plt.imsave('state.jpg',state.permute(0,2,1).cpu().numpy())
 
             next_state = model.obj_encoder(model.obj_extractor(next_obs))
 
