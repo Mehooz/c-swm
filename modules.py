@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from torch import nn
 
+K = 5
+
 
 class ContrastiveSWM(nn.Module):
     """Main module for a Contrastively-trained Structured World Model (C-SWM).
@@ -16,6 +18,7 @@ class ContrastiveSWM(nn.Module):
         action_dim: Dimensionality of action space.
         num_objects: Number of object slots.
     """
+
     def __init__(self, embedding_dim, input_dims, hidden_dim, action_dim,
                  num_objects, hinge=1., sigma=0.5, encoder='large',
                  ignore_action=False, copy_action=False):
@@ -29,7 +32,7 @@ class ContrastiveSWM(nn.Module):
         self.sigma = sigma
         self.ignore_action = ignore_action
         self.copy_action = copy_action
-        
+
         self.pos_loss = 0
         self.neg_loss = 0
 
@@ -74,6 +77,12 @@ class ContrastiveSWM(nn.Module):
 
         self.width = width_height[0]
         self.height = width_height[1]
+        self.criterion = nn.CrossEntropyLoss()
+        self.seg_encoder = EncoderCNNSeg(
+            input_dim=num_channels,
+            hidden_dim=hidden_dim // 16,
+            num_objects=num_objects
+        )
 
     @staticmethod
     def discriminator(energy):
@@ -83,7 +92,7 @@ class ContrastiveSWM(nn.Module):
     def energy(self, state, action, next_state, no_trans=False):
         """Energy function based on normalized squared L2 norm."""
 
-        norm = 0.5 / (self.sigma**2)
+        norm = 0.5 / (self.sigma ** 2)
 
         if no_trans:
             diff = state - next_state
@@ -96,8 +105,7 @@ class ContrastiveSWM(nn.Module):
     def transition_loss(self, state, action, next_state):
         return self.energy(state, action, next_state).mean()
 
-    def contrastive_loss(self, obs, action, next_obs):
-
+    def infoNCE(self, obs, action, next_obs):
         objs = self.obj_extractor(obs)
         next_objs = self.obj_extractor(next_obs)
 
@@ -108,14 +116,41 @@ class ContrastiveSWM(nn.Module):
         batch_size = state.size(0)
         perm = np.random.permutation(batch_size)
         neg_state = state[perm]
+        # neg_next_state = next_state[perm]
 
-        self.pos_loss = self.energy(state, action, next_state,no_trans=True)
+        pred_trans = self.transition_model(state, action)
+        pos = torch.exp(torch.bmm((state + pred_trans).permute(0, 2, 1), state))
+
+        pred_neg_trans = self.transition_model(neg_state, action)
+        neg = torch.exp(torch.bmm((neg_state + pred_neg_trans).permute(0, 2, 1), state))
+
+        loss = -torch.log(torch.div(pos, neg)).sum()
+
+        return loss
+
+    def contrastive_loss(self, obs, action, next_obs):
+
+        objs = self.seg_encoder(obs)
+        # objs = self.obj_extractor(obs)
+        next_objs = self.seg_encoder(next_obs)
+
+        # next_objs = self.obj_extractor(next_obs)
+
+        state = self.obj_encoder(objs)
+        next_state = self.obj_encoder(next_objs)
+
+        # Sample negative state across episodes at random
+        batch_size = state.size(0)
+        perm = np.random.permutation(batch_size)
+        neg_next_state = next_state[perm]
+
+        self.pos_loss = self.energy(state, action, next_state, no_trans=True)
         zeros = torch.zeros_like(self.pos_loss)
 
         self.pos_loss = self.pos_loss.mean()
         self.neg_loss = torch.max(
             zeros, self.hinge - self.energy(
-                state, action, neg_state, no_trans=True)).mean()
+                state, action, neg_next_state, no_trans=True)).mean()
 
         loss = self.pos_loss + self.neg_loss
 
@@ -127,6 +162,7 @@ class ContrastiveSWM(nn.Module):
 
 class TransitionGNN(torch.nn.Module):
     """GNN-based transition function."""
+
     def __init__(self, input_dim, hidden_dim, action_dim, num_objects,
                  ignore_action=False, copy_action=False, act_fn='relu'):
         super(TransitionGNN, self).__init__()
@@ -143,7 +179,7 @@ class TransitionGNN(torch.nn.Module):
             self.action_dim = action_dim
 
         self.edge_mlp = nn.Sequential(
-            nn.Linear(input_dim*2, hidden_dim),
+            nn.Linear(input_dim * 2, hidden_dim),
             util.get_act_fn(act_fn),
             nn.Linear(hidden_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
@@ -251,7 +287,7 @@ class TransitionGNN(torch.nn.Module):
 
 class EncoderCNNSmall(nn.Module):
     """CNN encoder, maps observation to obj-specific feature maps."""
-    
+
     def __init__(self, input_dim, hidden_dim, num_objects, act_fn='sigmoid',
                  act_fn_hid='relu'):
         super(EncoderCNNSmall, self).__init__()
@@ -265,11 +301,11 @@ class EncoderCNNSmall(nn.Module):
     def forward(self, obs):
         h = self.act1(self.ln1(self.cnn1(obs)))
         return self.act2(self.cnn2(h))
-    
-    
+
+
 class EncoderCNNMedium(nn.Module):
     """CNN encoder, maps observation to obj-specific feature maps."""
-    
+
     def __init__(self, input_dim, hidden_dim, num_objects, act_fn='sigmoid',
                  act_fn_hid='leaky_relu'):
         super(EncoderCNNMedium, self).__init__()
@@ -290,7 +326,7 @@ class EncoderCNNMedium(nn.Module):
 
 class EncoderCNNLarge(nn.Module):
     """CNN encoder, maps observation to obj-specific feature maps."""
-    
+
     def __init__(self, input_dim, hidden_dim, num_objects, act_fn='sigmoid',
                  act_fn_hid='relu'):
         super(EncoderCNNLarge, self).__init__()
@@ -319,7 +355,7 @@ class EncoderCNNLarge(nn.Module):
 
 class EncoderMLP(nn.Module):
     """MLP encoder, maps observation to latent state."""
-    
+
     def __init__(self, input_dim, output_dim, hidden_dim, num_objects,
                  act_fn='relu'):
         super(EncoderMLP, self).__init__()
@@ -345,7 +381,7 @@ class EncoderMLP(nn.Module):
 
 class DecoderMLP(nn.Module):
     """MLP decoder, maps latent state to image."""
-    
+
     def __init__(self, input_dim, hidden_dim, num_objects, output_size,
                  act_fn='relu'):
         super(DecoderMLP, self).__init__()
@@ -376,7 +412,7 @@ class DecoderMLP(nn.Module):
 
 class DecoderCNNSmall(nn.Module):
     """CNN decoder, maps latent state to image."""
-    
+
     def __init__(self, input_dim, hidden_dim, num_objects, output_size,
                  act_fn='relu'):
         super(DecoderCNNSmall, self).__init__()
@@ -416,7 +452,7 @@ class DecoderCNNSmall(nn.Module):
 
 class DecoderCNNMedium(nn.Module):
     """CNN decoder, maps latent state to image."""
-    
+
     def __init__(self, input_dim, hidden_dim, num_objects, output_size,
                  act_fn='relu'):
         super(DecoderCNNMedium, self).__init__()
@@ -506,3 +542,49 @@ class DecoderCNNLarge(nn.Module):
         h = self.act4(self.ln1(self.deconv2(h)))
         h = self.act5(self.ln1(self.deconv3(h)))
         return self.deconv4(h)
+
+
+class EncoderCNNSeg(nn.Module):
+    """CNN encoder, maps observation to obj-specific feature maps."""
+
+    def __init__(self, input_dim, hidden_dim, num_objects, act_fn='sigmoid',
+                 act_fn_hid='relu'):
+        super(EncoderCNNSeg, self).__init__()
+
+        self.cnn1 = nn.Conv2d(6, 32, (8, 8), stride=4)
+        self.act1 = util.get_act_fn(act_fn_hid)
+        # self.ln1 = nn.BatchNorm2d(hidden_dim)
+
+        self.cnn2 = nn.Conv2d(32, 64, (4, 4), stride=2)
+        self.act2 = util.get_act_fn(act_fn_hid)
+        # self.ln2 = nn.BatchNorm2d(hidden_dim)
+
+        self.cnn3 = nn.Conv2d(64, 64, (3, 3), stride=1)
+        self.act3 = util.get_act_fn(act_fn_hid)
+        # self.ln3 = nn.BatchNorm2d(hidden_dim)
+
+        self.fc1 = nn.Flatten(1, -1)
+        self.act4 = util.get_act_fn(act_fn_hid)
+
+        self.fc2 = nn.Linear(256, 1323)
+        self.act5 = util.get_act_fn(act_fn_hid)
+        self.act6 = util.get_act_fn(act_fn)
+
+        self.cnn4=nn.Conv2d(3,3,(1,1))
+
+        self.upsample1 = nn.UpsamplingBilinear2d(32)
+        self.upsample2 = nn.UpsamplingBilinear2d(50)
+
+    def forward(self, obs):
+        bs = obs.size(0)
+        h = self.act1(self.cnn1(obs))
+        h = self.act2(self.cnn2(h))
+        h = self.act3(self.cnn3(h))
+        h = self.fc2(self.fc1(h)).view(bs, 3, 21, 21)
+        h = self.act4(self.upsample1(h))
+        h = self.act5(self.upsample2(h))
+
+        h=self.cnn4(h)
+        h=self.act6(h)
+
+        return h

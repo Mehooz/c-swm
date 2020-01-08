@@ -17,7 +17,7 @@ from gym import logger
 import numpy as np
 from PIL import Image
 
-
+K=5
 class RandomAgent(object):
     """The world's simplest agent!"""
 
@@ -97,17 +97,25 @@ if __name__ == '__main__':
             ob = crop_normalize(ob, crop)
 
             while True:
+
                 replay_buffer[i]['obs'].append(
                     np.concatenate((ob, prev_ob), axis=0))
-                prev_ob = ob
+                tmp_ob=ob
+                action_list=[]
+                ob_list=[]
+                for k in range(K):
+                    prev_ob = ob
 
-                action = agent.act(ob, reward, done)
-                ob, reward, done, _ = env.step(action)
-                ob = crop_normalize(ob, crop)
+                    action = agent.act(prev_ob, reward, done)
+                    tmp_ob, reward, done, _ = env.step(action)
+                    tmp_ob = crop_normalize(tmp_ob, crop)
 
-                replay_buffer[i]['action'].append(action)
+                    action_list.append(action)
+                    ob_list.append(np.concatenate((tmp_ob, prev_ob), axis=0))
+
+                replay_buffer[i]['action'].append(action_list)
                 replay_buffer[i]['next_obs'].append(
-                    np.concatenate((ob, prev_ob), axis=0))
+                    ob_list)
 
                 if done:
                     break

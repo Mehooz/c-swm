@@ -10,6 +10,13 @@
             </list>
           </settings>
         </remote-mappings>
+        <remote-mappings server-id="python@sftp://zmh@101.6.96.131:6022/usr/bin/python3">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/home/zmh/code/c-swm" />
+            </list>
+          </settings>
+        </remote-mappings>
       </list>
     </list>
   </component>

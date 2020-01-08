@@ -10,7 +10,7 @@ from torch.utils import data
 import numpy as np
 from collections import defaultdict
 import torch.nn.functional as F
-import modules
+import mask_modules
 
 torch.backends.cudnn.deterministic = True
 
@@ -28,9 +28,9 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
 
 args_eval = parser.parse_args()
 
-if __name__=='__main__':
-    meta_file = os.path.join(args_eval.save_folder, 'metadata_no_pred.pkl')
-    model_file = os.path.join(args_eval.save_folder, 'model_no_pred.pt')
+if __name__ == '__main__':
+    meta_file = os.path.join(args_eval.save_folder, 'metadata_mask.pkl')
+    model_file = os.path.join(args_eval.save_folder, 'model_mask.pt')
 
     args = pickle.load(open(meta_file, 'rb'))['args']
 
@@ -55,7 +55,7 @@ if __name__=='__main__':
     obs = eval_loader.__iter__().next()[0]
     input_shape = obs[0][0].size()
 
-    model = modules.ContrastiveSWM(
+    model = mask_modules.ContrastiveSWMMASK(
         embedding_dim=args.embedding_dim,
         hidden_dim=args.hidden_dim,
         action_dim=args.action_dim,
@@ -90,14 +90,13 @@ if __name__=='__main__':
 
             obs = observations[0]
             next_obs = observations[-1]
-            mask=model.seg_encoder(obs)
-            state = model.obj_encoder(model.seg_encoder(obs))
-            plt.imsave('mask_1.jpg',mask[1].permute(1,2,0).cpu().numpy())
+            state = model.seg_encoder(obs)
+            # state = model.obj_encoder(model.seg_encoder(obs))
+            plt.imsave('mask_1.jpg', state[1].permute(1, 2, 0).cpu().numpy())
 
-            plt.imsave('obs_1.jpg',obs[0][0:3].permute(1,2,0).cpu().numpy())
+            plt.imsave('obs_1.jpg', obs[0][0:3].permute(1, 2, 0).cpu().numpy())
 
-
-            next_state = model.obj_encoder(model.seg_encoder(next_obs))
+            next_state = model.seg_encoder(next_obs)
 
             pred_state = state
             for i in range(args_eval.num_steps):

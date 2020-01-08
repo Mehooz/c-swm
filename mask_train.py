@@ -11,7 +11,7 @@ import logging
 from torch.utils import data
 import torch.nn.functional as F
 
-import modules
+import mask_modules
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -82,9 +82,9 @@ if __name__=='__main__':
 
     if not os.path.exists(save_folder):
         os.mkdir(save_folder)
-    meta_file = os.path.join(save_folder, 'metadata_no_pred.pkl')
-    model_file = os.path.join(save_folder, 'model_no_pred.pt')
-    log_file = os.path.join(save_folder, 'log_no_pred.txt')
+    meta_file = os.path.join(save_folder, 'metadata_mask.pkl')
+    model_file = os.path.join(save_folder, 'model_mask.pt')
+    log_file = os.path.join(save_folder, 'log_mask.txt')
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
     logger = logging.getLogger()
@@ -104,7 +104,7 @@ if __name__=='__main__':
     obs = train_loader.__iter__().next()[0]
     input_shape = obs[0].size()
 
-    model = modules.ContrastiveSWM(
+    model = mask_modules.ContrastiveSWMMASK(
         embedding_dim=args.embedding_dim,
         hidden_dim=args.hidden_dim,
         action_dim=args.action_dim,
@@ -122,31 +122,6 @@ if __name__=='__main__':
         model.parameters(),
         lr=args.learning_rate)
 
-    if args.decoder:
-        if args.encoder == 'large':
-            decoder = modules.DecoderCNNLarge(
-                input_dim=args.embedding_dim,
-                num_objects=args.num_objects,
-                hidden_dim=args.hidden_dim // 16,
-                output_size=input_shape).to(device)
-        elif args.encoder == 'medium':
-            decoder = modules.DecoderCNNMedium(
-                input_dim=args.embedding_dim,
-                num_objects=args.num_objects,
-                hidden_dim=args.hidden_dim // 16,
-                output_size=input_shape).to(device)
-        elif args.encoder == 'small':
-            decoder = modules.DecoderCNNSmall(
-                input_dim=args.embedding_dim,
-                num_objects=args.num_objects,
-                hidden_dim=args.hidden_dim // 16,
-                output_size=input_shape).to(device)
-        decoder.apply(util.weights_init)
-        optimizer_dec = torch.optim.Adam(
-            decoder.parameters(),
-            lr=args.learning_rate)
-
-
     # Train model.
     print('Starting model training...')
     step = 0
@@ -160,33 +135,12 @@ if __name__=='__main__':
             data_batch = [tensor.to(device) for tensor in data_batch]
             optimizer.zero_grad()
 
-            if args.decoder:
-                optimizer_dec.zero_grad()
-                obs, action, next_obs = data_batch
-                objs = model.obj_extractor(obs)
-                state = model.obj_encoder(objs)
-
-                rec = torch.sigmoid(decoder(state))
-                loss = F.binary_cross_entropy(
-                    rec, obs, reduction='sum') / obs.size(0)
-
-                next_state_pred = state + model.transition_model(state, action)
-                next_rec = torch.sigmoid(decoder(next_state_pred))
-                next_loss = F.binary_cross_entropy(
-                    next_rec, next_obs,
-                    reduction='sum') / obs.size(0)
-                loss += next_loss
-                loss = loss*0.01+ model.contrastive_loss(*data_batch)
-            else:
-                loss = model.contrastive_loss(*data_batch)
+            loss = 1000*model.contrastive_loss(*data_batch)
                 #loss=model.infoNCE(*data_batch)
 
             loss.backward()
             train_loss += loss.item()
             optimizer.step()
-
-            if args.decoder:
-                optimizer_dec.step()
 
             if batch_idx % args.log_interval == 0:
                 print(
