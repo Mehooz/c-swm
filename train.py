@@ -15,7 +15,7 @@ import modules
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=1024,
+    parser.add_argument('--batch-size', type=int, default=64,
                         help='Batch size.')
     parser.add_argument('--epochs', type=int, default=100,
                         help='Number of training epochs.')
@@ -82,9 +82,9 @@ if __name__=='__main__':
 
     if not os.path.exists(save_folder):
         os.mkdir(save_folder)
-    meta_file = os.path.join(save_folder, 'metadata_no_pred.pkl')
-    model_file = os.path.join(save_folder, 'model_no_pred.pt')
-    log_file = os.path.join(save_folder, 'log_no_pred.txt')
+    meta_file = os.path.join(save_folder, 'metadata_pred.pkl')
+    model_file = os.path.join(save_folder, 'model_pred.pt')
+    log_file = os.path.join(save_folder, 'log_pred.txt')
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
     logger = logging.getLogger()
@@ -118,7 +118,7 @@ if __name__=='__main__':
 
     model.apply(util.weights_init)
 
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.SGD(
         model.parameters(),
         lr=args.learning_rate)
 

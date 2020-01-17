@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from torch.utils import data
 import numpy as np
 from collections import defaultdict
-import torch.nn.functional as F
+import cv2
 import modules
 
 torch.backends.cudnn.deterministic = True
@@ -29,8 +29,8 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
 args_eval = parser.parse_args()
 
 if __name__=='__main__':
-    meta_file = os.path.join(args_eval.save_folder, 'metadata_no_pred.pkl')
-    model_file = os.path.join(args_eval.save_folder, 'model_no_pred.pt')
+    meta_file = os.path.join(args_eval.save_folder, 'metadata_pred.pkl')
+    model_file = os.path.join(args_eval.save_folder, 'model_pred.pt')
 
     args = pickle.load(open(meta_file, 'rb'))['args']
 
@@ -90,14 +90,19 @@ if __name__=='__main__':
 
             obs = observations[0]
             next_obs = observations[-1]
-            mask=model.seg_encoder(obs)
-            state = model.obj_encoder(model.seg_encoder(obs))
-            plt.imsave('mask_1.jpg',mask[1].permute(1,2,0).cpu().numpy())
+            mask=model.obj_extractor(obs)
+            state = model.obj_encoder(model.obj_extractor(obs))
+            #plt.imsave('mask.jpg',mask[1].permute(1,2,0).cpu().numpy())
+            cv2.imwrite('mask.jpg',mask[1].permute(1,2,0).cpu().numpy()*255)
+            cv2.imwrite('obs_0.jpg', obs[1][0].cpu().numpy()[:,:,None]*255)
+            cv2.imwrite('obs_1.jpg', obs[1][1].cpu().numpy()[:,:,None])
+            cv2.imwrite('obs_2.jpg', obs[1][2].cpu().numpy()[:,:,None])
+            cv2.imwrite('mask_0.jpg',mask[1][0].cpu().numpy()[:,:,None]*255)
+            cv2.imwrite('mask_1.jpg',mask[1][1].cpu().numpy()[:,:,None]*255)
+            cv2.imwrite('mask_2.jpg',mask[1][2].cpu().numpy()[:,:,None]*255)
 
-            plt.imsave('obs_1.jpg',obs[0][0:3].permute(1,2,0).cpu().numpy())
 
-
-            next_state = model.obj_encoder(model.seg_encoder(next_obs))
+            next_state = model.obj_encoder(model.obj_extractor(next_obs))
 
             pred_state = state
             for i in range(args_eval.num_steps):

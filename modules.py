@@ -78,11 +78,6 @@ class ContrastiveSWM(nn.Module):
         self.width = width_height[0]
         self.height = width_height[1]
         self.criterion = nn.CrossEntropyLoss()
-        self.seg_encoder = EncoderCNNSeg(
-            input_dim=num_channels,
-            hidden_dim=hidden_dim // 16,
-            num_objects=num_objects
-        )
 
     @staticmethod
     def discriminator(energy):
@@ -130,11 +125,8 @@ class ContrastiveSWM(nn.Module):
 
     def contrastive_loss(self, obs, action, next_obs):
 
-        objs = self.seg_encoder(obs)
-        # objs = self.obj_extractor(obs)
-        next_objs = self.seg_encoder(next_obs)
-
-        # next_objs = self.obj_extractor(next_obs)
+        objs = self.obj_extractor(obs)
+        next_objs = self.obj_extractor(next_obs)
 
         state = self.obj_encoder(objs)
         next_state = self.obj_encoder(next_objs)
@@ -142,7 +134,8 @@ class ContrastiveSWM(nn.Module):
         # Sample negative state across episodes at random
         batch_size = state.size(0)
         perm = np.random.permutation(batch_size)
-        neg_next_state = next_state[perm]
+        neg_state = state[perm]
+        '''
 
         self.pos_loss = self.energy(state, action, next_state, no_trans=True)
         zeros = torch.zeros_like(self.pos_loss)
@@ -151,8 +144,18 @@ class ContrastiveSWM(nn.Module):
         self.neg_loss = torch.max(
             zeros, self.hinge - self.energy(
                 state, action, neg_next_state, no_trans=True)).mean()
+        '''
 
-        loss = self.pos_loss + self.neg_loss
+
+        self.pos_loss2 = self.energy(state, action, next_state)
+        zeros = torch.zeros_like(self.pos_loss2)
+
+        self.pos_loss2 = self.pos_loss2.mean()
+        self.neg_loss2 = torch.max(
+            zeros, self.hinge - self.energy(
+                state, action, neg_state, no_trans=True)).mean()
+
+        loss = self.pos_loss2+self.neg_loss2
 
         return loss
 
