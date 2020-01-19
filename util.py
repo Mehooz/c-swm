@@ -7,7 +7,8 @@ import numpy as np
 import torch
 from torch.utils import data
 from torch import nn
-
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 EPS = 1e-17

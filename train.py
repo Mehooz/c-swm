@@ -93,7 +93,7 @@ if __name__=='__main__':
 
     pickle.dump({'args': args}, open(meta_file, "wb"))
 
-    device = torch.device('cuda' if args.cuda else 'cpu')
+    device = torch.device('cuda:7' if args.cuda else 'cpu')
 
     dataset = util.StateTransitionsDataset(
         hdf5_file=args.dataset)

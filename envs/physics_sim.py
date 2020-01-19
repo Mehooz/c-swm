@@ -8,6 +8,8 @@ https://github.com/seuqaj114/paig/blob/master/nn/datasets/generators.py
 
 
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from itertools import combinations

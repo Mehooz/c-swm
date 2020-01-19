@@ -241,7 +241,7 @@ class TransitionGNN(torch.nn.Module):
             self.edge_list = self.edge_list.transpose(0, 1)
 
             if cuda:
-                self.edge_list = self.edge_list.cuda()
+                self.edge_list = self.edge_list.to('cuda:7')
 
         return self.edge_list
 
@@ -318,19 +318,25 @@ class EncoderCNNMedium(nn.Module):
         self.ln1 = nn.BatchNorm2d(hidden_dim)
 
         self.cnn2 = nn.Conv2d(
-            hidden_dim, num_objects, (5, 5), stride=5)
-        self.act2 = util.get_act_fn(act_fn)
+            hidden_dim, hidden_dim, (5, 5), stride=5)
+        self.act2 = util.get_act_fn(act_fn_hid)
+        self.ln2 = nn.BatchNorm2d(hidden_dim)
+
+        self.cnn3 = nn.Conv2d(
+            hidden_dim, num_objects, (1, 1),padding=0)
+        self.act3 = util.get_act_fn(act_fn)
 
     def forward(self, obs):
         h = self.act1(self.ln1(self.cnn1(obs)))
-        h = self.act2(self.cnn2(h))
+        h = self.act2(self.ln2(self.cnn2(h)))
+        h = self.act3(self.cnn3(h))
         return h
 
 
 class EncoderCNNLarge(nn.Module):
     """CNN encoder, maps observation to obj-specific feature maps."""
 
-    def __init__(self, input_dim, hidden_dim, num_objects, act_fn='sigmoid',
+    def __init__(self, input_dim, hidden_dim, num_objects, act_fn='relu',
                  act_fn_hid='relu'):
         super(EncoderCNNLarge, self).__init__()
 
@@ -346,7 +352,7 @@ class EncoderCNNLarge(nn.Module):
         self.act3 = util.get_act_fn(act_fn_hid)
         self.ln3 = nn.BatchNorm2d(hidden_dim)
 
-        self.cnn4 = nn.Conv2d(hidden_dim, num_objects, (3, 3), padding=1)
+        self.cnn4 = nn.Conv2d(hidden_dim, num_objects, (1, 1), padding=0)
         self.act4 = util.get_act_fn(act_fn)
 
     def forward(self, obs):
@@ -591,3 +597,16 @@ class EncoderCNNSeg(nn.Module):
         h=self.act6(h)
 
         return h
+
+class EncoderDQN(nn.Module):
+
+
+    def __init__(self):
+        super(EncoderDQN, self).__init__()
+        self.convs = nn.Sequential(nn.Conv2d(4, 32, 8, stride=4, padding=0), nn.ReLU(),
+                                   nn.Conv2d(32, 64, 4, stride=2, padding=0), nn.ReLU(),
+                                   nn.Conv2d(64, 64, 3, stride=1, padding=0), nn.ReLU())
+
+    def forward(self, x):
+        z=self.convs(x)
+

@@ -44,7 +44,7 @@ if __name__=='__main__':
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
 
-    device = torch.device('cuda' if args.cuda else 'cpu')
+    device = torch.device('cuda:7' if args.cuda else 'cpu')
 
     dataset = util.PathDataset(
         hdf5_file=args.dataset, path_length=args_eval.num_steps)
